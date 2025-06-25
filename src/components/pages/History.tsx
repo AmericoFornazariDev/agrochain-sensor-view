@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,24 +6,17 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Download, Filter } from 'lucide-react';
+import { CalendarIcon, Download, Filter, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-
-interface HistoryData {
-  id: string;
-  timestamp: string;
-  temperature: number;
-  humidity: number;
-  soilMoisture: number;
-  gas: number;
-  location: string;
-}
+import { apiClient } from '@/utils/api';
+import { HistoryData, ApiResponse } from '@/types/api';
 
 export function History() {
   const [data, setData] = useState<HistoryData[]>([]);
   const [filteredData, setFilteredData] = useState<HistoryData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     sensor: 'all',
     location: 'all',
@@ -35,22 +27,20 @@ export function History() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Mock data for demonstration
-        const mockData: HistoryData[] = Array.from({ length: 50 }, (_, i) => ({
-          id: (i + 1).toString(),
-          timestamp: new Date(Date.now() - i * 3600000).toISOString(),
-          temperature: 20 + Math.random() * 15,
-          humidity: 40 + Math.random() * 40,
-          soilMoisture: 50 + Math.random() * 30,
-          gas: 300 + Math.random() * 200,
-          location: ['Campo A', 'Campo B', 'Campo C'][Math.floor(Math.random() * 3)],
-        }));
+        setLoading(true);
+        setError(null);
         
-        setData(mockData);
-        setFilteredData(mockData);
-        setLoading(false);
+        const response = await apiClient.get<ApiResponse<HistoryData[]>>('/sensors/history');
+        if (response.success) {
+          setData(response.data);
+          setFilteredData(response.data);
+        } else {
+          setError(response.message || 'Erro ao carregar histórico');
+        }
       } catch (error) {
         console.error('Error fetching history data:', error);
+        setError('Erro ao conectar com a API. Verifique a conexão.');
+      } finally {
         setLoading(false);
       }
     };
@@ -58,23 +48,86 @@ export function History() {
     fetchData();
   }, []);
 
-  const applyFilters = () => {
-    let filtered = data;
+  const applyFilters = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const params = new URLSearchParams();
+      
+      if (filters.location !== 'all') {
+        params.append('location', filters.location);
+      }
+      
+      if (filters.dateFrom) {
+        params.append('dateFrom', filters.dateFrom.toISOString());
+      }
+      
+      if (filters.dateTo) {
+        params.append('dateTo', filters.dateTo.toISOString());
+      }
 
-    if (filters.location !== 'all') {
-      filtered = filtered.filter(item => item.location === filters.location);
+      const queryString = params.toString();
+      const endpoint = queryString ? `/sensors/history?${queryString}` : '/sensors/history';
+      
+      const response = await apiClient.get<ApiResponse<HistoryData[]>>(endpoint);
+      if (response.success) {
+        setFilteredData(response.data);
+      } else {
+        setError(response.message || 'Erro ao filtrar dados');
+      }
+    } catch (error) {
+      console.error('Error filtering history data:', error);
+      setError('Erro ao aplicar filtros.');
+    } finally {
+      setLoading(false);
     }
-
-    if (filters.dateFrom) {
-      filtered = filtered.filter(item => new Date(item.timestamp) >= filters.dateFrom!);
-    }
-
-    if (filters.dateTo) {
-      filtered = filtered.filter(item => new Date(item.timestamp) <= filters.dateTo!);
-    }
-
-    setFilteredData(filtered);
   };
+
+  const exportData = async () => {
+    try {
+      const response = await apiClient.get<ApiResponse<HistoryData[]>>('/sensors/history/export');
+      if (response.success) {
+        // Convert data to CSV
+        const csvContent = [
+          ['Data/Hora', 'Localização', 'Temperatura (°C)', 'Humidade (%)', 'Solo (%)', 'Gás (ppm)'],
+          ...response.data.map(item => [
+            new Date(item.timestamp).toLocaleString('pt-BR'),
+            item.location,
+            item.temperature.toFixed(1),
+            item.humidity.toFixed(1),
+            item.soilMoisture.toFixed(1),
+            item.gas.toFixed(0)
+          ])
+        ].map(row => row.join(',')).join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `historico-sensores-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Error exporting data:', error);
+    }
+  };
+
+  if (error) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 text-red-700">
+              <AlertTriangle className="h-5 w-5" />
+              <span className="font-medium">{error}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -181,7 +234,7 @@ export function History() {
                 {filteredData.length} registros encontrados
               </CardDescription>
             </div>
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button onClick={exportData} variant="outline" className="flex items-center gap-2">
               <Download className="h-4 w-4" />
               Exportar CSV
             </Button>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,22 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertTriangle, AlertCircle, Info, Eye, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface Alert {
-  id: string;
-  message: string;
-  description: string;
-  severity: 'low' | 'medium' | 'high';
-  type: 'temperature' | 'humidity' | 'soil' | 'gas';
-  timestamp: string;
-  location: string;
-  resolved: boolean;
-}
+import { apiClient } from '@/utils/api';
+import { Alert, ApiResponse } from '@/types/api';
 
 export function Alerts() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [filteredAlerts, setFilteredAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     severity: 'all',
     type: 'all',
@@ -32,55 +23,20 @@ export function Alerts() {
   useEffect(() => {
     const fetchAlerts = async () => {
       try {
-        // Mock data for demonstration
-        const mockAlerts: Alert[] = [
-          {
-            id: '1',
-            message: 'Temperatura crítica detectada',
-            description: 'A temperatura no Campo A atingiu 35°C, ultrapassando o limite máximo recomendado de 30°C. Recomenda-se verificar o sistema de irrigação e ventilação.',
-            severity: 'high',
-            type: 'temperature',
-            timestamp: new Date(Date.now() - 1800000).toISOString(),
-            location: 'Campo A',
-            resolved: false,
-          },
-          {
-            id: '2',
-            message: 'Humidade do solo baixa',
-            description: 'A humidade do solo no Campo B está em 25%, abaixo do recomendado (40-60%). Sistema de irrigação deve ser ativado.',
-            severity: 'medium',
-            type: 'soil',
-            timestamp: new Date(Date.now() - 3600000).toISOString(),
-            location: 'Campo B',
-            resolved: false,
-          },
-          {
-            id: '3',
-            message: 'Nível de gás elevado',
-            description: 'Detectados 450ppm de gases no Campo C. Verificar possível vazamento ou fermentação excessiva.',
-            severity: 'high',
-            type: 'gas',
-            timestamp: new Date(Date.now() - 7200000).toISOString(),
-            location: 'Campo C',
-            resolved: true,
-          },
-          {
-            id: '4',
-            message: 'Humidade relativa alta',
-            description: 'Humidade do ar em 85% no Campo A. Risco de desenvolvimento de fungos.',
-            severity: 'medium',
-            type: 'humidity',
-            timestamp: new Date(Date.now() - 10800000).toISOString(),
-            location: 'Campo A',
-            resolved: false,
-          },
-        ];
+        setLoading(true);
+        setError(null);
         
-        setAlerts(mockAlerts);
-        setFilteredAlerts(mockAlerts);
-        setLoading(false);
+        const response = await apiClient.get<ApiResponse<Alert[]>>('/alerts');
+        if (response.success) {
+          setAlerts(response.data);
+          setFilteredAlerts(response.data);
+        } else {
+          setError(response.message || 'Erro ao carregar alertas');
+        }
       } catch (error) {
         console.error('Error fetching alerts:', error);
+        setError('Erro ao conectar com a API. Verifique a conexão.');
+      } finally {
         setLoading(false);
       }
     };
@@ -105,6 +61,20 @@ export function Alerts() {
     }
 
     setFilteredAlerts(filtered);
+  };
+
+  const markAsResolved = async (alertId: string) => {
+    try {
+      const response = await apiClient.post<ApiResponse<Alert>>(`/alerts/${alertId}/resolve`, {});
+      if (response.success) {
+        setAlerts(alerts.map(alert => 
+          alert.id === alertId ? { ...alert, resolved: true } : alert
+        ));
+        applyFilters();
+      }
+    } catch (error) {
+      console.error('Error marking alert as resolved:', error);
+    }
   };
 
   const getSeverityIcon = (severity: string) => {
@@ -139,6 +109,21 @@ export function Alerts() {
         return 'Baixo';
     }
   };
+
+  if (error) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 text-red-700">
+              <AlertTriangle className="h-5 w-5" />
+              <span className="font-medium">{error}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -307,7 +292,10 @@ export function Alerts() {
                         
                         <div className="flex justify-end gap-2 mt-6">
                           {!alert.resolved && (
-                            <Button className="bg-green-600 hover:bg-green-700">
+                            <Button 
+                              onClick={() => markAsResolved(alert.id)}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
                               Marcar como Resolvido
                             </Button>
                           )}

@@ -5,65 +5,44 @@ import { SensorChart } from '@/components/dashboard/SensorChart';
 import { AlertBanner } from '@/components/dashboard/AlertBanner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Thermometer, Droplet, Wind, AlertTriangle } from 'lucide-react';
-
-interface SensorData {
-  temperature: number;
-  humidity: number;
-  soilMoisture: number;
-  gas: number;
-  timestamp: string;
-}
-
-interface Alert {
-  id: string;
-  message: string;
-  severity: 'low' | 'medium' | 'high';
-  timestamp: string;
-}
+import { apiClient } from '@/utils/api';
+import { SensorData, Alert, ApiResponse } from '@/types/api';
 
 export function Dashboard() {
   const [sensorData, setSensorData] = useState<SensorData | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [chartData, setChartData] = useState<SensorData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Simulated API calls - replace with actual API endpoints
-        const dataResponse = await fetch('/api/data');
-        const alertsResponse = await fetch('/api/alerts');
-        
-        // For demo purposes, using mock data
-        const mockData: SensorData = {
-          temperature: 24.5,
-          humidity: 65,
-          soilMoisture: 78,
-          gas: 342,
-          timestamp: new Date().toISOString(),
-        };
-        
-        const mockAlerts: Alert[] = [
-          {
-            id: '1',
-            message: 'Temperatura acima do limite recomendado',
-            severity: 'high',
-            timestamp: new Date().toISOString(),
-          },
-        ];
-        
-        setSensorData(mockData);
-        setAlerts(mockAlerts);
-        setChartData(Array.from({ length: 10 }, (_, i) => ({
-          ...mockData,
-          temperature: mockData.temperature + Math.random() * 5 - 2.5,
-          humidity: mockData.humidity + Math.random() * 10 - 5,
-          timestamp: new Date(Date.now() - (9 - i) * 60000).toISOString(),
-        })));
-        
-        setLoading(false);
+        setLoading(true);
+        setError(null);
+
+        // Fetch current sensor data
+        const sensorResponse = await apiClient.get<ApiResponse<SensorData>>('/sensors/current');
+        if (sensorResponse.success) {
+          setSensorData(sensorResponse.data);
+        }
+
+        // Fetch alerts
+        const alertsResponse = await apiClient.get<ApiResponse<Alert[]>>('/alerts');
+        if (alertsResponse.success) {
+          setAlerts(alertsResponse.data);
+        }
+
+        // Fetch historical data for charts (last 10 readings)
+        const historyResponse = await apiClient.get<ApiResponse<SensorData[]>>('/sensors/history?limit=10');
+        if (historyResponse.success) {
+          setChartData(historyResponse.data);
+        }
+
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching dashboard data:', error);
+        setError('Erro ao carregar dados do dashboard. Verifique a conexão com a API.');
+      } finally {
         setLoading(false);
       }
     };
@@ -94,7 +73,22 @@ export function Dashboard() {
     );
   }
 
-  const criticalAlerts = alerts.filter(alert => alert.severity === 'high');
+  if (error) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2 text-red-700">
+              <AlertTriangle className="h-5 w-5" />
+              <span className="font-medium">{error}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const criticalAlerts = alerts.filter(alert => alert.severity === 'high' && !alert.resolved);
 
   return (
     <div className="space-y-6 animate-fade-in">

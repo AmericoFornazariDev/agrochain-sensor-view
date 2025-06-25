@@ -3,16 +3,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, X } from 'lucide-react';
 import { useState } from 'react';
-
-interface AlertData {
-  id: string;
-  message: string;
-  severity: 'low' | 'medium' | 'high';
-  timestamp: string;
-}
+import { Alert as AlertType } from '@/types/api';
 
 interface AlertBannerProps {
-  alerts: AlertData[];
+  alerts: AlertType[];
 }
 
 export function AlertBanner({ alerts }: AlertBannerProps) {
