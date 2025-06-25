@@ -1,10 +1,9 @@
-
 import { useEffect, useState } from 'react';
 import { SensorCard } from '@/components/dashboard/SensorCard';
 import { SensorChart } from '@/components/dashboard/SensorChart';
 import { AlertBanner } from '@/components/dashboard/AlertBanner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Thermometer, Droplet, Wind, AlertTriangle, CloudSnow, Co2 } from 'lucide-react';
+import { Thermometer, Droplet, Wind, AlertTriangle, CloudSnow, Activity } from 'lucide-react';
 import { apiClient } from '@/utils/api';
 import { SensorData, Alert, ApiResponse } from '@/types/api';
 
@@ -157,7 +156,7 @@ export function Dashboard() {
           title="CO₂"
           value={sensorData?.co2 || 0}
           unit="ppm"
-          icon={Co2}
+          icon={Activity}
           trend="down"
           className="hover:scale-105 transition-transform duration-200"
         />
