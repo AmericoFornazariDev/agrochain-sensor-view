@@ -90,14 +90,18 @@ export function History() {
       if (response.success) {
         // Convert data to CSV
         const csvContent = [
-          ['Data/Hora', 'Localização', 'Temperatura (°C)', 'Humidade (%)', 'Solo (%)', 'Gás (ppm)'],
+          ['Data/Hora', 'Localização', 'Temperatura (°C)', 'Humidade (%)', 'Solo (%)', 'Gás (ppm)', 'Fumaça (ppm)', 'Luminosidade (lx)', 'Pressão (hPa)', 'CO₂ (ppm)'],
           ...response.data.map(item => [
             new Date(item.timestamp).toLocaleString('pt-BR'),
             item.location,
             item.temperature.toFixed(1),
             item.humidity.toFixed(1),
             item.soilMoisture.toFixed(1),
-            item.gas.toFixed(0)
+            item.gas.toFixed(0),
+            item.smoke.toFixed(0),
+            item.luminosity.toFixed(0),
+            item.atmosphericPressure.toFixed(1),
+            item.co2.toFixed(0)
           ])
         ].map(row => row.join(',')).join('\n');
         
@@ -252,12 +256,20 @@ export function History() {
                   <th className="text-left p-3 font-semibold">Humidade (%)</th>
                   <th className="text-left p-3 font-semibold">Solo (%)</th>
                   <th className="text-left p-3 font-semibold">Gás (ppm)</th>
+                  <th className="text-left p-3 font-semibold">Fumaça (ppm)</th>
+                  <th className="text-left p-3 font-semibold">Luminosidade (lx)</th>
+                  <th className="text-left p-3 font-semibold">Pressão (hPa)</th>
+                  <th className="text-left p-3 font-semibold">CO₂ (ppm)</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   Array.from({ length: 10 }).map((_, i) => (
                     <tr key={i} className="border-b border-gray-100 dark:border-gray-800 animate-pulse">
+                      <td className="p-3"><div className="h-4 bg-gray-200 rounded"></div></td>
+                      <td className="p-3"><div className="h-4 bg-gray-200 rounded"></div></td>
+                      <td className="p-3"><div className="h-4 bg-gray-200 rounded"></div></td>
+                      <td className="p-3"><div className="h-4 bg-gray-200 rounded"></div></td>
                       <td className="p-3"><div className="h-4 bg-gray-200 rounded"></div></td>
                       <td className="p-3"><div className="h-4 bg-gray-200 rounded"></div></td>
                       <td className="p-3"><div className="h-4 bg-gray-200 rounded"></div></td>
@@ -281,6 +293,10 @@ export function History() {
                       <td className="p-3 font-mono">{item.humidity.toFixed(1)}</td>
                       <td className="p-3 font-mono">{item.soilMoisture.toFixed(1)}</td>
                       <td className="p-3 font-mono">{item.gas.toFixed(0)}</td>
+                      <td className="p-3 font-mono">{item.smoke.toFixed(0)}</td>
+                      <td className="p-3 font-mono">{item.luminosity.toFixed(0)}</td>
+                      <td className="p-3 font-mono">{item.atmosphericPressure.toFixed(1)}</td>
+                      <td className="p-3 font-mono">{item.co2.toFixed(0)}</td>
                     </tr>
                   ))
                 )}

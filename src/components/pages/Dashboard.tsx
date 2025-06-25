@@ -4,7 +4,7 @@ import { SensorCard } from '@/components/dashboard/SensorCard';
 import { SensorChart } from '@/components/dashboard/SensorChart';
 import { AlertBanner } from '@/components/dashboard/AlertBanner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Thermometer, Droplet, Wind, AlertTriangle } from 'lucide-react';
+import { Thermometer, Droplet, Wind, AlertTriangle, CloudSnow, Co2 } from 'lucide-react';
 import { apiClient } from '@/utils/api';
 import { SensorData, Alert, ApiResponse } from '@/types/api';
 
@@ -57,7 +57,7 @@ export function Dashboard() {
     return (
       <div className="space-y-6 animate-fade-in">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: 8 }).map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardHeader className="space-y-0 pb-2">
                 <div className="h-4 bg-gray-200 rounded"></div>
@@ -129,6 +129,38 @@ export function Dashboard() {
           trend="up"
           className="hover:scale-105 transition-transform duration-200"
         />
+        <SensorCard
+          title="Fumaça"
+          value={sensorData?.smoke || 0}
+          unit="ppm"
+          icon={CloudSnow}
+          trend="stable"
+          className="hover:scale-105 transition-transform duration-200"
+        />
+        <SensorCard
+          title="Luminosidade"
+          value={sensorData?.luminosity || 0}
+          unit="lx"
+          icon={CloudSnow}
+          trend="up"
+          className="hover:scale-105 transition-transform duration-200"
+        />
+        <SensorCard
+          title="Pressão Atmosférica"
+          value={sensorData?.atmosphericPressure || 0}
+          unit="hPa"
+          icon={Wind}
+          trend="stable"
+          className="hover:scale-105 transition-transform duration-200"
+        />
+        <SensorCard
+          title="CO₂"
+          value={sensorData?.co2 || 0}
+          unit="ppm"
+          icon={Co2}
+          trend="down"
+          className="hover:scale-105 transition-transform duration-200"
+        />
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -145,6 +177,34 @@ export function Dashboard() {
           dataKey="humidity"
           color="#3b82f6"
           unit="%"
+        />
+        <SensorChart
+          title="Fumaça"
+          data={chartData}
+          dataKey="smoke"
+          color="#ef4444"
+          unit="ppm"
+        />
+        <SensorChart
+          title="Luminosidade"
+          data={chartData}
+          dataKey="luminosity"
+          color="#f59e0b"
+          unit="lx"
+        />
+        <SensorChart
+          title="Pressão Atmosférica"
+          data={chartData}
+          dataKey="atmosphericPressure"
+          color="#8b5cf6"
+          unit="hPa"
+        />
+        <SensorChart
+          title="CO₂"
+          data={chartData}
+          dataKey="co2"
+          color="#06b6d4"
+          unit="ppm"
         />
       </div>
     </div>

@@ -4,6 +4,10 @@ export interface SensorData {
   humidity: number;
   soilMoisture: number;
   gas: number;
+  smoke: number;
+  luminosity: number;
+  atmosphericPressure: number;
+  co2: number;
   timestamp: string;
 }
 
@@ -12,7 +16,7 @@ export interface Alert {
   message: string;
   description: string;
   severity: 'low' | 'medium' | 'high';
-  type: 'temperature' | 'humidity' | 'soil' | 'gas';
+  type: 'temperature' | 'humidity' | 'soil' | 'gas' | 'smoke' | 'luminosity' | 'pressure' | 'co2';
   timestamp: string;
   location: string;
   resolved: boolean;
@@ -25,6 +29,10 @@ export interface HistoryData {
   humidity: number;
   soilMoisture: number;
   gas: number;
+  smoke: number;
+  luminosity: number;
+  atmosphericPressure: number;
+  co2: number;
   location: string;
 }
 
