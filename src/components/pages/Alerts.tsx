@@ -255,7 +255,7 @@ export function Alerts() {
                         )}
                       </div>
                       
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground user>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span>{new Date(alert.timestamp).toLocaleString('pt-BR')}</span>
                         <span>•</span>
                         <span>{alert.location}</span>
